@@ -2,7 +2,7 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 import time
-from util import crack_detection, slice_image
+from traditional_optimer.util import crack_detection, slice_image
 
 strat_time = time.time()
 plt.ion()

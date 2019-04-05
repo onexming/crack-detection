@@ -1,5 +1,5 @@
 # crtl + -/+ 折叠 +shift全部折叠
-from model import model1 as model
+from core.model import model1 as model
 import tensorflow as tf
 
 

@@ -1,13 +1,14 @@
 # coding=utf-8
 
 import tensorflow as tf
-from model import model1 as Model
+from core.model import model
 from raw_to_tfrecoder import iterator
 from datetime import datetime
 import time
-from evalution import evluation
+from traditional_optimer.evalution import evluation
 import os
 
+# 关闭系统警告
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = '3'
 work_dir = "model2/"
 data_dir = "input/"
@@ -18,7 +19,7 @@ log_dir = "log2/"
 def train():
     with tf.Graph().as_default():
         X, Y = iterator(data_dir, "train")
-        logits = Model(X, 0.5, True)
+        logits = model(X, 0.5, True)
         loss = tf.losses.sparse_softmax_cross_entropy(Y, logits)
         # 创建或或者获取global_step
         step = tf.train.get_or_create_global_step()

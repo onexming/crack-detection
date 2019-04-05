@@ -8,9 +8,9 @@ import random
 import sys
 import matplotlib.pyplot as plt
 
-DATA_DIR = 'data/'
+DATA_DIR = './data/raw_image'
 
-# assert tf.gfile.Exists(DATA_DIR), "No path or file found!"
+assert tf.gfile.Exists(DATA_DIR), "No path or file found!"
 
 
 # 制作每个数据的label, 得到每张图片的完整路径
@@ -31,9 +31,7 @@ def create_image_dict(dir, name_list):
         file_list = []
         for extension in extensions:
             file_glob = os.path.join(sud_dir, "*." + extension)
-            im_list = glob.glob(file_glob)
-            # print(im_list[1:10])
-            # print(extension)
+            im_list = glob.glob(file_glob)  # 匹配目录下所有的图片
             file_list.extend(im_list)
         # 如果file_list为空,跳过本次循环
         if not file_list: continue
@@ -52,32 +50,33 @@ def create_image_dict(dir, name_list):
                     }
                     data_list.append(data)
     print("处理出的列表长度为%d" % (len(data_list)))
-    # exit()
     return data_list
 
 
 # 创建tfrecoder文件
 def create_tfrecoder(data_list, dir=None, shuffle=True):
+    # 如果没有给定 dir 则讲之赋值, 如果该目录下有文件,则将全部删除
     if dir == None:
-        dir = "input/"
+        dir = "./data/"
         if not os.path.exists(dir):
             os.makedirs(dir)
         for file in os.listdir(dir):
-            os.remove(os.path.join(dir, file))
+            if not os.path.isdir(os.path.join(dir, file)):
+                os.remove(os.path.join(dir, file))
     if not tf.gfile.Exists(dir):
         tf.gfile.MakeDirs(dir)
     # 打乱列表的数据
     if shuffle:
         random.shuffle(data_list)
     # 获取图片的尺寸信息
-    wide, heigh = Image.open(data_list[1]['image']).size
+    wide, heigh = Image.open(data_list[0]['image']).size
     writer = []
     tfdata_name = ['train', 'test']
     # 拥有分别储存训练集和验证集数据
     # 控制每个文件的写入大小
     num_example = []
     for i in tfdata_name:
-        writer.append(tf.python_io.TFRecordWriter(os.path.join(dir, i + "_0000" + ".tf")))
+        writer.append(tf.python_io.TFRecordWriter(os.path.join(dir, i + "_0000" + ".tfrecords")))
         # 用于计数test和train已经写入的数量
         num_example.append(0)
     court = 0
@@ -96,13 +95,15 @@ def create_tfrecoder(data_list, dir=None, shuffle=True):
         idx = 0 if random.random() > 0.1 else 1
         writer[idx].write(example.SerializeToString())
         num_example[idx] += 1
-        if num_example[idx] % 2000 == 0:
+        if num_example[idx] % 5000 == 0:
             writer[idx].close()
-            writer[idx] = tf.python_io.TFRecordWriter(dir + "/%s_%d.tf" % (tfdata_name[idx], num_example[idx]))
-            # print("%s 完成 %d 个" % (tfdata_name[idx], num_example[idx]))
+            writer[idx] = tf.python_io.TFRecordWriter(dir + "/%s_%d.tfrecords" % (tfdata_name[idx], num_example[idx]))
+        # print("%s 完成 %d 个" % (tfdata_name[idx], num_example[idx]))
         court += 1
         sys.stdout.write("\r>>  Converting image {}/{}  <<".format(court, len(data_list)))
         sys.stdout.flush()
+    writer[0].close()
+    writer[1].close()
     print("\n数据转化完成")
 
 
@@ -116,7 +117,7 @@ def iterator(dir, model):
             'image': tf.FixedLenFeature([], tf.string),
             'label': tf.FixedLenFeature([], tf.int64)
         }
-        data = tf.parse_single_example(example, parse_dict)
+        data = tf.io.parse_single_example(example, parse_dict)
         image = data['image']
         label = data['label']
         # 将转化为原来的图片的uint8的数据格式
@@ -219,29 +220,6 @@ class slide():
 
 
 if __name__ == '__main__':
-    # name_list = glob.glob(os.path.join("/home/wxming/PycharmProject/Data/TFdata/Concrete", "train" + "*"))
-    # print(name_list)
-    # sess = tf.InteractiveSession()
-    # dir = "/home/wxming/PycharmProject/Data/TFdata/Concrete"
-    # get_data = iterator(dir, 'train')
-    # for _ in range(1000):
-    #     image, label = sess.run(get_data)
-    #     print(_)
-    # print("label", label)
-    # print(image[1, :, :, :])
-    # figu = plt.figure()
-    # for i in range(32):
-    #     a = figu.add_subplot(4, 8, i+1)
-    #     a.imshow(image[i, :, :, :])
-    # im = image[1, :, :, :]
-    # max = np.argmax(im)
-    # print(max)
-    # print(im[max])
-    # im = np.([227, 227, 3])
-    # print(im)
-    # plt.imshow(im)
-    # plt.show()
-
     name_list = ['negative', 'positive']
     list_dir = create_image_dict(DATA_DIR, name_list)
     create_tfrecoder(list_dir)

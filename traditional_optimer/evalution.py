@@ -2,9 +2,8 @@
 import tensorflow as tf
 import os
 import glob
-import matplotlib.pyplot as plt
 
-from model import model1 as Model
+from core.model import model1 as Model
 
 
 class evluation():
